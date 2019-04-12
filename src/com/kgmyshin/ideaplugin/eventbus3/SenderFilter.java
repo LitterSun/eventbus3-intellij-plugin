@@ -6,23 +6,33 @@ import com.intellij.usages.Usage;
 import com.intellij.usages.UsageInfo2UsageAdapter;
 
 import javax.swing.*;
+import java.util.List;
 
 /**
  * Created by kgmyshin on 2015/06/07.
- *
+ * <p>
  * modify by likfe ( https://github.com/likfe/ ) in 2016/09/05
- *
+ * <p>
  * add try-catch
  */
 public class SenderFilter implements Filter {
 
-    private final PsiClass eventClass;
+    private final List<PsiClass> mEventClasses;
 
-    SenderFilter(PsiClass eventClass) {
-        this.eventClass = eventClass;
+    SenderFilter(List<PsiClass> eventClasses) {
+        this.mEventClasses = eventClasses;
     }
 
     private static final Icon ICON = IconLoader.getIcon("/icons/icon.png");
+
+    private boolean isEventClass(String clazz) {
+        for (PsiClass eventClass : mEventClasses) {
+            if (clazz.equals(eventClass.getName())) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     @Override
     public boolean shouldShow(Usage usage) {
@@ -32,7 +42,7 @@ public class SenderFilter implements Filter {
                 PsiMethodCallExpression callExpression = (PsiMethodCallExpression) element;
                 PsiType[] types = callExpression.getArgumentList().getExpressionTypes();
                 for (PsiType type : types) {
-                    if (PsiUtils.getClass(type).getName().equals(eventClass.getName())) {
+                    if (isEventClass(PsiUtils.getClass(type).getName())) {
                         // pattern : EventBus.getDefault().post(new Event());
                         return true;
                     }
@@ -50,13 +60,13 @@ public class SenderFilter implements Filter {
                                         PsiLocalVariable localVariable = (PsiLocalVariable) variable;
                                         PsiClass psiClass = PsiUtils.getClass(localVariable.getTypeElement().getType());
                                         try {
-                                            if (psiClass.getName().equals(eventClass.getName())) {
+                                            if (isEventClass(psiClass.getName())) {
                                                 // pattern :
                                                 //   Event event = new Event();
                                                 //   EventBus.getDefault().post(event);
                                                 return true;
                                             }
-                                        }catch (NullPointerException e){
+                                        } catch (NullPointerException e) {
                                             System.out.println(e.toString());
                                         }
 

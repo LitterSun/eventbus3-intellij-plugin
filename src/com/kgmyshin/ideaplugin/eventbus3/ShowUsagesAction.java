@@ -234,6 +234,26 @@ public class ShowUsagesAction extends AnAction implements PopupAction{
         showElementUsages(handler, editor, popupPosition, maxUsages, getDefaultOptions(handler));
     }
 
+    void startFindUsages(List<PsiElement> generatedDeclarations, @NotNull PsiElement element, @NotNull RelativePoint popupPosition, Editor editor, int maxUsages) {
+        FindUsagesHandler handler = getFindUsageHandler(generatedDeclarations, element, false);
+        if (handler == null) {
+            return;
+        }
+        showElementUsages(handler, editor, popupPosition, maxUsages, getDefaultOptions(handler));
+    }
+
+    private FindUsagesHandler getFindUsageHandler(List<PsiElement> generatedDeclarations, PsiElement element, boolean forHighlightUsages) {
+        if (generatedDeclarations.isEmpty()) {
+            return null;
+        }
+        FindUsagesManager findUsagesManager = ((FindManagerImpl) FindManager.getInstance(element.getProject())).getFindUsagesManager();
+        List<FindUsagesHandler> delegateFindUsageHandlers = new ArrayList<FindUsagesHandler>(3);
+        for (PsiElement psiElement : generatedDeclarations) {
+            delegateFindUsageHandlers.add(findUsagesManager.getFindUsagesHandler(psiElement, forHighlightUsages));
+        }
+        return delegateFindUsageHandlers.size() == 1 ? delegateFindUsageHandlers.get(0) : new DelegatingFindUsagesHandler(element, delegateFindUsageHandlers);
+    }
+
     @NotNull
     private static FindUsagesOptions getDefaultOptions(@NotNull FindUsagesHandler handler) {
         FindUsagesOptions options = handler.getFindUsagesOptions(DataManager.getInstance().getDataContext());
